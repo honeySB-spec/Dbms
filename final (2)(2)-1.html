@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Structured E-R Diagram: Smart City Parking (Korth Notation)</title>
+    <!-- Cytoscape.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            background-color: #ffffff;
+            overflow: hidden;
+            /* Prevent body scroll */
+        }
+
+        /* --- Sidebar Styles --- */
+        #sidebar {
+            width: 320px;
+            min-width: 320px;
+            box-sizing: border-box;
+            background: #f8f9fa;
+            border-right: 1px solid #ddd;
+            padding: 20px;
+            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.05);
+            overflow-y: auto;
+            z-index: 10;
+            transition: margin-left 0.3s ease, transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #sidebar.collapsed {
+            margin-left: -320px;
+        }
+
+        /* Custom Scrollbar for Sidebar */
+        #sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #sidebar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        #sidebar::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        #sidebar::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        h3 {
+            color: #34495e;
+            font-size: 1.05rem;
+            margin-top: 0;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 5px;
+        }
+
+        .legend-item {
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+            color: #495057;
+            display: flex;
+            align-items: center;
+        }
+
+        .legend-box {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            border: 1px solid #000;
+            background: #e3f2fd;
+        }
+
+        .legend-box.double {
+            border-width: 3px;
+            border-style: double;
+        }
+
+        .legend-diamond {
+            width: 14px;
+            height: 14px;
+            margin-right: 14px;
+            margin-left: 3px;
+            border: 1px solid #000;
+            background: #fff3e0;
+            transform: rotate(45deg);
+        }
+
+        .legend-diamond.double {
+            border-width: 3px;
+            border-style: double;
+            transform: rotate(45deg);
+        }
+
+        .legend-line {
+            display: inline-block;
+            width: 20px;
+            border-top: 1px solid #000;
+            margin-right: 10px;
+        }
+
+        .legend-line.double {
+            border-top: 4px double #000;
+        }
+
+        /* --- Network & Controls Styles --- */
+        #main-content {
+            flex-grow: 1;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #cy {
+            flex-grow: 1;
+            width: 100%;
+            height: 100%;
+            background-color: #ffffff;
+            background-image: radial-gradient(#d5d5d5 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        /* Toggle Button */
+        #toggle-btn {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            z-index: 20;
+            background: #ffffff;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 12px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            font-size: 1.2rem;
+            color: #333;
+            transition: background 0.2s;
+        }
+
+        #toggle-btn:hover {
+            background: #f0f0f0;
+        }
+
+        /* Floating View Controls */
+        #view-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border: 1px solid #e0e0e0;
+        }
+
+        #view-controls button {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 36px;
+            height: 36px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #555;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        #view-controls button:hover {
+            background: #f0f8ff;
+            color: #0056b3;
+            border-color: #0056b3;
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+            #sidebar {
+                position: absolute;
+                height: 100%;
+            }
+
+            #sidebar.collapsed {
+                margin-left: 0;
+                transform: translateX(-100%);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="sidebar">
+        <div>
+            <h3>Definitions</h3>
+            <div class="legend-item">
+                <div class="legend-box"></div> Strong Entity
+            </div>
+            <div class="legend-item">
+                <div class="legend-box double"></div> Weak Entity
+            </div>
+            <div class="legend-item">
+                <div class="legend-diamond"></div> Relationship
+            </div>
+            <div class="legend-item">
+                <div class="legend-diamond double"></div> Identifying Relationship
+            </div>
+            <div class="legend-item" style="margin-top: 15px;">
+                <span class="legend-line"></span> Partial Participation
+            </div>
+            <div class="legend-item">
+                <span class="legend-line double"></span> Total Participation
+            </div>
+            <div class="legend-item">
+                <span
+                    style="display:inline-block; margin-right: 10px; font-weight: bold; font-family: monospace; font-size: 1.2rem;">-&gt;</span>
+                One (Arrow)
+            </div>
+            <div class="legend-item">
+                <span
+                    style="display:inline-block; width:0; height:0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 15px solid #fff; filter: drop-shadow(0px -1px 0px #000) drop-shadow(1px 0px 0px #000) drop-shadow(-1px 0px 0px #000); margin-right: 10px;"></span>
+                ISA (Generalization)
+            </div>
+        </div>
+    </div>
+
+    <div id="main-content">
+        <button id="toggle-btn" title="Toggle Sidebar">☰</button>
+
+        <div id="view-controls">
+            <button id="zoom-in" title="Zoom In">＋</button>
+            <button id="zoom-out" title="Zoom Out">－</button>
+            <button id="fit" title="Fit to Screen">⛶</button>
+        </div>
+
+        <div id="cy"></div>
+    </div>
+
+    <script>
+        // Sidebar Toggle Logic
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('toggle-btn');
+
+        // Auto-collapse on small screens
+        if (window.innerWidth <= 768) {
+            sidebar.classList.add('collapsed');
+        }
+
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            setTimeout(() => {
+                cy.resize();
+                cy.fit(cy.elements(), 50);
+            }, 300);
+        });
+
+        // 1. Define Nodes (Translating from vis.js to Cytoscape)
+        const nodes = [
+            // Strong Entities
+            { data: { id: 'STREET_NAME_DICTIONARY', label: 'STREET_NAME_DICTIONARY\n------------------------\nStreet_Code (PK)\nPrimary_Name\nLocal_Group_Code' }, classes: 'entity', position: { x: -480, y: -360 } },
+            { data: { id: 'PARKING_ZONE', label: 'PARKING_ZONE\n------------------------\nZone_ID (PK)\nZone_Name\nCapacity' }, classes: 'entity', position: { x: 480, y: -540 } },
+            { data: { id: 'PARKING_METER', label: 'PARKING_METER\n------------------------\nMeter_Number (PK)\nOperational_Status' }, classes: 'entity', position: { x: 960, y: -540 } },
+            { data: { id: 'TARIFF_RULE', label: 'TARIFF_RULE\n------------------------\nTariff_ID (PK)\nHourly_Rate\nMax_Duration' }, classes: 'entity', position: { x: 960, y: -360 } },
+            { data: { id: 'VIOLATION_TICKET', label: 'VIOLATION_TICKET\n------------------------\nSummons_Number (PK)\nIssue_Date\nViolation_Time\nHouse_Number\nFine_Amount\nPenalty_Amount\nReduction_Amount\nJudgment_Date' }, classes: 'entity ticket', position: { x: 0, y: 0 } },
+            { data: { id: 'VIOLATION_CODE', label: 'VIOLATION_CODE\n------------------------\nCode_ID (PK)\nDefinition\nFine_Amount' }, classes: 'entity', position: { x: 480, y: 0 } },
+            { data: { id: 'VEHICLE', label: 'VEHICLE\n------------------------\nVehicle_ID (PK)\nPlate_ID\nRegistration_State\nPlate_Type\nVehicle_Make' }, classes: 'entity', position: { x: 0, y: 360 } },
+            { data: { id: 'PASSENGER', label: 'PASSENGER_CAR\n------------------------\nOwner_Class' }, classes: 'entity', position: { x: -180, y: 660 } },
+            { data: { id: 'COMMERCIAL', label: 'COMMERCIAL_VAN\n------------------------\nCompany_Name\nDOT_License' }, classes: 'entity', position: { x: 180, y: 660 } },
+            { data: { id: 'VEHICLE_OWNER', label: 'VEHICLE_OWNER\n------------------------\nOwner_ID (PK)\nFull_Name\nLicense_Number\nAddress' }, classes: 'entity', position: { x: -480, y: 360 } },
+            { data: { id: 'ISSUER', label: 'ISSUER\n------------------------\nIssuer_ID (PK)\nIssuing_Agency\nIssuer_Command' }, classes: 'entity', position: { x: -480, y: 0 } },
+            { data: { id: 'HUMAN_OFFICER', label: 'HUMAN_OFFICER\n------------------------\nBadge_Number' }, classes: 'entity', position: { x: -840, y: -120 } },
+            { data: { id: 'AUTO_CAMERA', label: 'AUTO_CAMERA\n------------------------\nMAC_Address' }, classes: 'entity', position: { x: -840, y: 120 } },
+            { data: { id: 'PARKING_SESSION', label: 'PARKING_SESSION\n------------------------\nSession_ID (PK)\nStart_Time\nExpiration_Time\nAmount_Paid' }, classes: 'entity', position: { x: 480, y: 360 } },
+
+            // Weak Entities
+            { data: { id: 'STREET_SEGMENT', label: 'STREET_SEGMENT\n------------------------\nSegment_ID (Partial)\nFrom_Node_ID\nTo_Node_ID\nBorough_Code\nGeometry' }, classes: 'weak-entity', position: { x: 0, y: -360 } },
+            { data: { id: 'PARKING_SPOT', label: 'PARKING_SPOT\n------------------------\nSpot_ID (Partial)\nLocation_Point\nStatus' }, classes: 'weak-entity', position: { x: 480, y: -180 } },
+            { data: { id: 'TICKET_PAYMENT', label: 'TICKET_PAYMENT\n------------------------\nReceipt_Number (Partial)\nPayment_Date\nAmount_Paid\nMethod' }, classes: 'weak-entity', position: { x: -480, y: -180 } },
+
+            // Relationships
+            { data: { id: 'zone_meter', label: 'zone_meter' }, classes: 'relationship', position: { x: 720, y: -540 } },
+            { data: { id: 'zone_tariff', label: 'zone_tariff' }, classes: 'relationship', position: { x: 720, y: -360 } },
+            { data: { id: 'ticket_segment', label: 'ticket_segment' }, classes: 'relationship', position: { x: 0, y: -180 } },
+            { data: { id: 'ticket_veh', label: 'ticket_veh' }, classes: 'relationship', position: { x: 0, y: 180 } },
+            { data: { id: 'ticket_issuer', label: 'ticket_issuer' }, classes: 'relationship', position: { x: -240, y: 0 } },
+            { data: { id: 'ticket_code', label: 'ticket_code' }, classes: 'relationship', position: { x: 240, y: 0 } },
+            { data: { id: 'owns_veh', label: 'owns_veh' }, classes: 'relationship', position: { x: -240, y: 360 } },
+            { data: { id: 'ticket_session', label: 'ticket_session' }, classes: 'relationship', position: { x: 240, y: 180 } },
+            { data: { id: 'session_veh', label: 'session_veh' }, classes: 'relationship', position: { x: 240, y: 360 } },
+            { data: { id: 'session_spot', label: 'session_spot' }, classes: 'relationship', position: { x: 480, y: 120 } },
+
+            // Identifying Relationships
+            { data: { id: 'segment_street', label: 'segment_street' }, classes: 'weak-relationship', position: { x: -240, y: -360 } },
+            { data: { id: 'zone_spot', label: 'zone_spot' }, classes: 'weak-relationship', position: { x: 480, y: -360 } },
+            { data: { id: 'ticket_pay', label: 'ticket_pay' }, classes: 'weak-relationship', position: { x: -240, y: -180 } },
+
+            // Attributes
+            { data: { id: 'attr_purchase', label: 'Purchase_Date' }, classes: 'attribute', position: { x: -300, y: 450 } },
+            { data: { id: 'attr_sale', label: 'Sale_Date' }, classes: 'attribute', position: { x: -180, y: 450 } },
+
+            // ISA Triangles
+            { data: { id: 'veh_isa', label: 'ISA' }, classes: 'isa', position: { x: 0, y: 510 } },
+            { data: { id: 'issuer_isa', label: 'ISA' }, classes: 'isa', position: { x: -660, y: 0 } }
+        ];
+
+        // 2. Define Edges (Total participation = double line)
+        const edges = [
+            // Infrastructure
+            { data: { source: 'STREET_SEGMENT', target: 'segment_street' }, classes: 'total' },
+            { data: { source: 'STREET_SEGMENT', target: 'segment_street' }, classes: 'total-inner' },
+            { data: { source: 'segment_street', target: 'STREET_NAME_DICTIONARY' }, classes: 'arrow' },
+            { data: { source: 'PARKING_SPOT', target: 'zone_spot' }, classes: 'total' },
+            { data: { source: 'PARKING_SPOT', target: 'zone_spot' }, classes: 'total-inner' },
+            { data: { source: 'zone_spot', target: 'PARKING_ZONE' }, classes: 'arrow' },
+            { data: { source: 'PARKING_METER', target: 'zone_meter' }, classes: 'total' },
+            { data: { source: 'PARKING_METER', target: 'zone_meter' }, classes: 'total-inner' },
+            { data: { source: 'zone_meter', target: 'PARKING_ZONE' }, classes: 'arrow' },
+            { data: { source: 'TARIFF_RULE', target: 'zone_tariff' } },
+            { data: { source: 'zone_tariff', target: 'PARKING_ZONE' }, classes: 'arrow' },
+
+            // Ticket Relationships
+            { data: { source: 'VIOLATION_TICKET', target: 'ticket_segment' } },
+            { data: { source: 'ticket_segment', target: 'STREET_SEGMENT' }, classes: 'arrow' },
+            { data: { source: 'VIOLATION_TICKET', target: 'ticket_veh' } },
+            { data: { source: 'ticket_veh', target: 'VEHICLE' }, classes: 'arrow' },
+            { data: { source: 'VIOLATION_TICKET', target: 'ticket_issuer' } },
+            { data: { source: 'ticket_issuer', target: 'ISSUER' }, classes: 'arrow' },
+            { data: { source: 'VIOLATION_TICKET', target: 'ticket_code' } },
+            { data: { source: 'ticket_code', target: 'VIOLATION_CODE' }, classes: 'arrow' },
+
+            // Payments (Weak)
+            { data: { source: 'TICKET_PAYMENT', target: 'ticket_pay' }, classes: 'total' },
+            { data: { source: 'TICKET_PAYMENT', target: 'ticket_pay' }, classes: 'total-inner' },
+            { data: { source: 'ticket_pay', target: 'VIOLATION_TICKET' }, classes: 'arrow' },
+
+            // Ownership
+            { data: { source: 'VEHICLE_OWNER', target: 'owns_veh' } },
+            { data: { source: 'owns_veh', target: 'VEHICLE' } },
+            { data: { source: 'owns_veh', target: 'attr_purchase' }, classes: 'dashed' },
+            { data: { source: 'owns_veh', target: 'attr_sale' }, classes: 'dashed' },
+
+            // Sessions
+            { data: { source: 'VIOLATION_TICKET', target: 'ticket_session' }, classes: 'dashed' },
+            { data: { source: 'ticket_session', target: 'PARKING_SESSION' }, classes: 'dashed-arrow' },
+            { data: { source: 'PARKING_SESSION', target: 'session_veh' } },
+            { data: { source: 'session_veh', target: 'VEHICLE' }, classes: 'arrow' },
+            { data: { source: 'PARKING_SESSION', target: 'session_spot' } },
+            { data: { source: 'session_spot', target: 'PARKING_SPOT' }, classes: 'arrow' },
+
+            // ISA
+            { data: { source: 'veh_isa', target: 'VEHICLE' } },
+            { data: { source: 'PASSENGER', target: 'veh_isa' } },
+            { data: { source: 'COMMERCIAL', target: 'veh_isa' } },
+            { data: { source: 'issuer_isa', target: 'ISSUER' } },
+            { data: { source: 'HUMAN_OFFICER', target: 'issuer_isa' } },
+            { data: { source: 'AUTO_CAMERA', target: 'issuer_isa' } }
+        ];
+
+        // 3. Initialize Cytoscape
+        const cy = cytoscape({
+            container: document.getElementById('cy'),
+            elements: [...nodes, ...edges],
+            layout: { name: 'preset' },
+            style: [
+                // General Node Styles
+                {
+                    selector: 'node',
+                    style: {
+                        'label': 'data(label)',
+                        'text-wrap': 'wrap',
+                        'text-valign': 'center',
+                        'text-halign': 'center',
+                        'font-family': 'Georgia, serif',
+                        'font-size': '14px',
+                        'border-color': '#000',
+                        'color': '#000'
+                    }
+                },
+                // Entity Styles
+                {
+                    selector: '.entity',
+                    style: {
+                        'shape': 'rectangle',
+                        'background-color': '#e3f2fd',
+                        'border-width': 1.5,
+                        'width': 'label',
+                        'height': 'label',
+                        'padding': 12
+                    }
+                },
+                {
+                    selector: '.ticket',
+                    style: { 'background-color': '#e8f5e9' }
+                },
+                // Weak Entity Styles (Double Border)
+                {
+                    selector: '.weak-entity',
+                    style: {
+                        'shape': 'rectangle',
+                        'background-color': '#e3f2fd',
+                        'border-width': 4,
+                        'border-style': 'double',
+                        'width': 'label',
+                        'height': 'label',
+                        'padding': 12
+                    }
+                },
+                // Relationship Styles
+                {
+                    selector: '.relationship',
+                    style: {
+                        'shape': 'diamond',
+                        'background-color': '#fff3e0',
+                        'border-width': 1.5,
+                        'width': 'label',
+                        'height': 'label',
+                        'padding': 25
+                    }
+                },
+                // Identifying Relationship Styles (Double Border)
+                {
+                    selector: '.weak-relationship',
+                    style: {
+                        'shape': 'diamond',
+                        'background-color': '#fff3e0',
+                        'border-width': 4,
+                        'border-style': 'double',
+                        'width': 'label',
+                        'height': 'label',
+                        'padding': 25
+                    }
+                },
+                // Attribute Styles
+                {
+                    selector: '.attribute',
+                    style: {
+                        'shape': 'ellipse',
+                        'background-color': '#fff',
+                        'border-width': 1,
+                        'width': 'label',
+                        'height': 'label',
+                        'padding': 8,
+                        'font-size': '12px'
+                    }
+                },
+                // ISA Triangle
+                {
+                    selector: '.isa',
+                    style: {
+                        'shape': 'triangle',
+                        'background-color': '#fff',
+                        'border-width': 1.5,
+                        'width': 50,
+                        'height': 50,
+                        'text-valign': 'bottom',
+                        'text-margin-y': 5
+                    }
+                },
+                // General Edge Styles
+                {
+                    selector: 'edge',
+                    style: {
+                        'width': 1.5,
+                        'line-color': '#000',
+                        'curve-style': 'bezier',
+                        'arrow-scale': 1.5
+                    }
+                },
+                // Total Participation Outer
+                {
+                    selector: '.total',
+                    style: {
+                        'width': 8,
+                        'line-color': '#000',
+                        'curve-style': 'straight',
+                        'z-index': 1
+                    }
+                },
+                // Total Participation Inner
+                {
+                    selector: '.total-inner',
+                    style: {
+                        'width': 3,
+                        'line-color': '#fff',
+                        'curve-style': 'straight',
+                        'z-index': 2
+                    }
+                },
+                // Edges with arrows (pointing to the "1" side)
+                {
+                    selector: '.arrow',
+                    style: {
+                        'target-arrow-shape': 'triangle',
+                        'target-arrow-color': '#000'
+                    }
+                },
+                // Dashed Edges
+                {
+                    selector: '.dashed',
+                    style: {
+                        'line-style': 'dashed'
+                    }
+                },
+                {
+                    selector: '.dashed-arrow',
+                    style: {
+                        'line-style': 'dashed',
+                        'target-arrow-shape': 'triangle',
+                        'target-arrow-color': '#000'
+                    }
+                }
+            ]
+        });
+
+        // Fit diagram on load
+        cy.ready(() => {
+            cy.fit(cy.elements(), 50);
+        });
+
+        window.addEventListener('resize', () => {
+            cy.fit(cy.elements(), 50);
+        });
+
+        // Controls
+        document.getElementById('zoom-in').addEventListener('click', () => cy.zoom(cy.zoom() * 1.2));
+        document.getElementById('zoom-out').addEventListener('click', () => cy.zoom(cy.zoom() / 1.2));
+        document.getElementById('fit').addEventListener('click', () => cy.fit(cy.elements(), 50));
+    </script>
+</body>
+
+</html>
